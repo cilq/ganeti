@@ -467,6 +467,7 @@ def RenameInstance(opts, args):
   op = opcodes.OpInstanceRename(instance_name=args[0],
                                 new_name=args[1],
                                 ip_check=opts.ip_check,
+                                skip_os=opts.skip_os,
                                 name_check=opts.name_check)
   result = SubmitOrSend(op, opts)
 

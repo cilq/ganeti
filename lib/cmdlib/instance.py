@@ -144,8 +144,9 @@ class LUInstanceRename(LogicalUnit):
         CheckDiskTemplateEnabled(self.cfg.GetClusterInfo(), disk.dev_type)
 
     CheckNodeOnline(self, instance.primary_node)
-    CheckInstanceState(self, instance, INSTANCE_NOT_RUNNING,
-                       msg="cannot rename")
+    if not self.op.skip_os:
+        CheckInstanceState(self, instance, INSTANCE_NOT_RUNNING,
+                           msg="cannot rename")
     self.instance = instance
 
     self._PerformChecksAndResolveNewName()
@@ -179,6 +180,9 @@ class LUInstanceRename(LogicalUnit):
     renamed_storage = [d for d in disks
                        if (d.dev_type in constants.DTS_FILEBASED and
                            d.dev_type != constants.DT_GLUSTER)]
+    if self.op.skip_os:
+      renamed_storage = []
+
     if renamed_storage and self.op.new_name != self.instance.name:
       disks = self.cfg.GetInstanceDisks(self.instance.uuid)
       old_file_storage_dir = os.path.dirname(disks[0].logical_id[1])
@@ -218,17 +222,18 @@ class LUInstanceRename(LogicalUnit):
                                                 (disk, renamed_inst), info)
         result.Warn("Error setting info on node %s for disk %s" %
                     (self.cfg.GetNodeName(node_uuid), idx), self.LogWarning)
-    try:
-      result = self.rpc.call_instance_run_rename(renamed_inst.primary_node,
-                                                 renamed_inst, old_name,
-                                                 self.op.debug_level)
-      result.Warn("Could not run OS rename script for instance %s on node %s"
-                  " (but the instance has been renamed in Ganeti)" %
-                  (renamed_inst.name,
-                   self.cfg.GetNodeName(renamed_inst.primary_node)),
-                  self.LogWarning)
-    finally:
-      ShutdownInstanceDisks(self, renamed_inst)
+    if not self.op.skip_os:
+      try:
+        result = self.rpc.call_instance_run_rename(renamed_inst.primary_node,
+                                                   renamed_inst, old_name,
+                                                   self.op.debug_level)
+        result.Warn("Could not run OS rename script for instance %s on node %s"
+                    " (but the instance has been renamed in Ganeti)" %
+                    (renamed_inst.name,
+                     self.cfg.GetNodeName(renamed_inst.primary_node)),
+                    self.LogWarning)
+      finally:
+        ShutdownInstanceDisks(self, renamed_inst)
 
     return renamed_inst.name
 

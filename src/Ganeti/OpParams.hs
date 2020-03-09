@@ -104,6 +104,7 @@ module Ganeti.OpParams
   , pDebugSimulateErrors
   , pErrorCodes
   , pSkipChecks
+  , pSkipOsScript
   , pIgnoreErrors
   , pOptGroupName
   , pGroupDiskParams
@@ -562,6 +563,11 @@ pSkipChecks =
   withDoc "Which checks to skip" .
   defaultField [| emptyListSet |] $
   simpleField "skip_checks" [t| ListSet VerifyOptionalChecks |]
+
+pSkipOsScript :: Field
+pSkipOsScript =
+  withDoc "Skip corresponding OS Script" $
+  defaultTrue "skip_os"
 
 pIgnoreErrors :: Field
 pIgnoreErrors =

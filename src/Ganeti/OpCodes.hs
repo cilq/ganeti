@@ -530,6 +530,7 @@ $(genOpCode "OpCode"
      , withDoc "New instance name" pNewName
      , pNameCheck
      , pIpCheck
+     , withDoc "Skip OS rename script" pSkipOsScript
      ],
      [])
   , ("OpInstanceStartup",
