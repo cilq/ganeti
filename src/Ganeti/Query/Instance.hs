@@ -41,6 +41,8 @@ module Ganeti.Query.Instance
   , instanceAliases
   ) where
 
+import Debug.Trace
+
 import Control.Applicative
 import Control.Monad (liftM, (>=>))
 import qualified Data.ByteString.UTF8 as UTF8
@@ -727,10 +729,10 @@ liveInstanceStatus cfg (instInfo, foundOnPrimary) inst
         | adminState == Just AdminUp -> Running
         | otherwise -> ErrorUp
       InstanceStateShutdown
-        | adminState == Just AdminUp && allowDown -> UserDown
-        | adminState == Just AdminUp -> ErrorDown
+        | adminState == Just AdminUp && trace ("liveInstanceStatus allowDown: " ++ show allowDown) allowDown -> UserDown
+        | adminState == Just AdminUp -> trace "liveInstanceStatus !allowDown" ErrorDown
         | otherwise -> StatusDown
-  where adminState = instAdminState inst
+  where adminState = trace "liveInstanceStatus" $ instAdminState inst
         instanceState = instInfoState instInfo
 
         hvparams =
@@ -747,12 +749,12 @@ liveInstanceStatus cfg (instInfo, foundOnPrimary) inst
 deadInstanceStatus :: ConfigData -> Instance -> InstanceStatus
 deadInstanceStatus cfg inst =
   case instAdminState inst of
-    Just AdminUp -> ErrorDown
-    Just AdminDown | wasCleanedUp && userShutdownEnabled cfg -> UserDown
-                   | otherwise -> StatusDown
+    Just AdminUp -> trace "deadInstanceStatus AdminUp" ErrorDown
+    Just AdminDown | wasCleanedUp && trace "deadInstanceStatus wasCleanedUp" userShutdownEnabled cfg -> trace "deadInstanceStatus userShutdownEnabled" UserDown
+                   | otherwise -> trace "deadInstanceStatus AdminDown otherwise" StatusDown
     Just AdminOffline -> StatusOffline
     Nothing -> StatusDown
-  where wasCleanedUp = instAdminStateSource inst == Just UserSource
+  where wasCleanedUp = trace "deadInstanceStatus" instAdminStateSource inst == Just UserSource
 
 -- | Determines the status of the instance, depending on whether it is possible
 -- to communicate with its primary node, on which node it is, and its
@@ -765,8 +767,8 @@ determineInstanceStatus cfg res inst
   | isPrimaryOffline cfg inst = NodeOffline
   | otherwise = case res of
       Left _                   -> NodeDown
-      Right (Just liveData, _) -> liveInstanceStatus cfg liveData inst
-      Right (Nothing, _)       -> deadInstanceStatus cfg inst
+      Right (Just liveData, _) -> trace "determineInstanceStatus liveData" $ liveInstanceStatus cfg liveData inst
+      Right (Nothing, _)       -> trace "determineInstanceStatus staleData" $ deadInstanceStatus cfg inst
 
 -- | Extracts the instance status, retrieving it using the functions above and
 -- transforming it into a 'ResultEntry'.
@@ -916,7 +918,7 @@ collectLiveData :: Bool        -- ^ Live queries allowed
                 -> IO [(Instance, Runtime)]
 collectLiveData liveDataEnabled cfg fields instances
   | not liveDataEnabled = return . zip instances . repeat . Left .
-                            RpcResultError $ "Live data disabled"
+                            RpcResultError $ trace "Instance.hs:collectLiveData Live data disabled" "Live data disabled"
   | otherwise = do
       let hvSpecs = getHypervisorSpecs cfg instances
           instanceNodes =
@@ -925,6 +927,7 @@ collectLiveData liveDataEnabled cfg fields instances
                        . instPrimaryNode
                        >=> getNode cfg) instances
           goodNodes = nodesWithValidConfig cfg instanceNodes
+          _ = trace ("Instance.hs:collectLiveData goodNodes: " ++ show goodNodes) ""
       instInfoRes <- executeRpcCall goodNodes (RpcCallAllInstancesInfo hvSpecs)
       consInfoRes <-
         if "console" `elem` fields

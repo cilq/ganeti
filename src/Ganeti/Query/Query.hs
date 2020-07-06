@@ -65,6 +65,8 @@ module Ganeti.Query.Query
     , uuidField
     ) where
 
+import Debug.Trace
+
 import Control.Arrow ((&&&))
 import Control.DeepSeq
 import Control.Monad (filterM, foldM, liftM, unless)
@@ -225,7 +227,7 @@ genericQuery fieldsMap collector nameFn configFn getFn cfg
       count = length fields
       selected = getSelectedFields fieldsMap allfields
       (fdefs, fgetters, _) = unzip3 selected
-      live' = live && needsLiveData fgetters
+      live' = live && trace "Query.hs:genericQuery live" (needsLiveData fgetters)
   objects <- toError $ case wanted of
              [] -> Ok . niceSortKey nameFn .
                    Foldable.toList $ configFn cfg
@@ -317,7 +319,7 @@ queryInner cfg live (Query (ItemTypeOpCode QRNode) fields qfilter) wanted =
                nodeName configNodes getNode cfg live fields qfilter wanted
 
 queryInner cfg live (Query (ItemTypeOpCode QRInstance) fields qfilter) wanted =
-  genericQuery Instance.fieldsMap (CollectorFieldAware Instance.collectLiveData)
+  trace "Query.hs:queryInner ItemTypeOpCode QRInstance" $ genericQuery Instance.fieldsMap (CollectorFieldAware Instance.collectLiveData)
                (fromMaybe "" . instName) configInstances getInstance cfg live
                fields qfilter
                wanted
@@ -336,11 +338,11 @@ queryInner cfg live (Query (ItemTypeOpCode QRExport) fields qfilter) wanted =
                nodeName configNodes getNode cfg live fields qfilter wanted
 
 queryInner cfg live (Query (ItemTypeLuxi QRFilter) fields qfilter) wanted =
-  genericQuery FilterRules.fieldsMap (CollectorSimple dummyCollectLiveData)
+  trace "Query.hs:queryInner ItemTypeLuxi QRFilter" $ genericQuery FilterRules.fieldsMap (CollectorSimple dummyCollectLiveData)
                uuidOf configFilters getFilterRule cfg live fields qfilter wanted
 
 queryInner _ _ (Query qkind _ _) _ =
-  return . Bad . GenericError $ "Query '" ++ show qkind ++ "' not supported"
+  trace "Query.hs:queryInner Query qkind" $ return . Bad . GenericError $ "Query '" ++ show qkind ++ "' not supported"
 
 -- | Query jobs specific query function, needed as we need to accept
 -- both 'QuotedString' and 'NumericValue' as wanted names.

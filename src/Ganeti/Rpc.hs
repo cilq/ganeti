@@ -107,6 +107,8 @@ module Ganeti.Rpc
   , RpcCallWriteSsconfFiles(..)
   ) where
 
+import Debug.Trace
+
 import Control.Arrow (second)
 import Control.Monad
 import qualified Data.ByteString.Lazy.Char8 as BL
@@ -211,7 +213,8 @@ prepareUrl port node call =
                      then "[" ++ node_ip ++ "]"
                      else node_ip
       path_prefix = "https://" ++ node_address ++ ":" ++ show port
-  in path_prefix ++ "/" ++ rpcCallName call
+      url =  path_prefix ++ "/" ++ rpcCallName call
+  in trace ("Rpc.hs:prepareUrl " ++ url) url
 
 -- | Create HTTP request for a given node provided it is online,
 -- otherwise create empty response.
@@ -320,7 +323,7 @@ executeRpcCalls' nodeCalls = do
 -- NB this computes the RPC call payload string only once.
 executeRpcCall :: (Rpc a b) => [Node] -> a -> IO [(Node, ERpcError b)]
 executeRpcCall nodes call = executeRpcCalls' [(n, call, rpc_data) | n <- nodes]
-  where rpc_data = rpcCallData call
+  where rpc_data = rpcCallData $ trace "Rpc.sh executeRpcCall" call
 
 -- | Helper function that is used to read dictionaries of values.
 sanitizeDictResults :: [(String, J.Result a)] -> ERpcError [(String, a)]

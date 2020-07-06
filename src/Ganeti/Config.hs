@@ -82,6 +82,8 @@ module Ganeti.Config
     , instNodes
     ) where
 
+import Debug.Trace
+
 import Control.Arrow ((&&&))
 import Control.Monad
 import Control.Monad.State
@@ -289,10 +291,10 @@ getNode cfg name =
 -- | Looks up an instance by name or uuid.
 getInstance :: ConfigData -> String -> ErrorResult Instance
 getInstance cfg name =
-  let instances = fromContainer (configInstances cfg)
+  let instances = trace ("Config.hs:getInstace " ++ name) $ fromContainer (configInstances cfg)
   in case getItem' "Instance" name instances of
        -- if not found by uuid, we need to look it up by name
-       Ok inst -> Ok inst
+       Ok inst -> trace "Instance found by UUID" $ Ok inst
        Bad _ -> let by_name =
                       M.delete ""
                       . M.mapKeys (fromMaybe "" . instName . (M.!) instances)
