@@ -2591,6 +2591,21 @@ class KVMHypervisor(hv_base.BaseHypervisor):
     self.qmp.StartMigration(target, port)
 
   @_with_qmp
+  def StartPostcopy(self, instance):
+    """Switch a migration from precopy to postcopy mode.
+
+    Requires that an instance is currently migrating, and that the
+    postcopy-ram (x-postcopy-ram on QEMU version 2.5 and below)
+    migration capability is enabled in the instance's hypervisor
+    parameters.
+
+    @type instance: L{objects.Instance}
+    @param instance: The instance being migrated.
+
+    """
+    self.qmp.StartPostcopy()
+
+  @_with_qmp
   def FinalizeMigrationSource(self, instance, success, _):
     """Finalize the instance migration on the source node.
 

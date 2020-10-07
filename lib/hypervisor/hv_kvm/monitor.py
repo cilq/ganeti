@@ -761,6 +761,14 @@ class QmpConnection(MonitorSocket):
     self.Execute("migrate", arguments)
 
   @_ensure_connection
+  def StartPostcopy(self):
+    """Switch running migration to postcopy mode
+
+    """
+
+    self.Execute("migrate-start-postcopy")
+
+  @_ensure_connection
   def GetMigrationStatus(self):
     """Retrieve the current migration status
 
