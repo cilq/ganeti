@@ -2639,6 +2639,7 @@ class KVMHypervisor(hv_base.BaseHypervisor):
             migration_status.transferred_ram = \
                 query_migrate["ram"]["transferred"]
             migration_status.total_ram = query_migrate["ram"]["total"]
+            migration_status.dirty_sync_count = query_migrate["ram"]["dirty-sync-count"]
 
           return migration_status
         else:

@@ -2317,6 +2317,7 @@ class MigrationStatus(ConfigObject):
     "status",
     "transferred_ram",
     "total_ram",
+    "dirty_sync_count",
     ]
 
 
